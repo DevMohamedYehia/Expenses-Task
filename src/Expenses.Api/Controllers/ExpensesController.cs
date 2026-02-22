@@ -13,23 +13,34 @@ public class ExpensesController : ControllerBase
     private readonly IExpenseService _expenseService;
     private readonly IValidator<CreateExpenseDto> _createExpenseValidator;
     private readonly IValidator<UpdateExpenseDto> _updateExpenseValidator;
+    private readonly IValidator<GetExpensesRequest> _getExpensesRequestValidator;
 
     public ExpensesController(
         IExpenseService expenseService,
         IValidator<CreateExpenseDto> createExpenseValidator,
-        IValidator<UpdateExpenseDto> updateExpenseValidator)
+        IValidator<UpdateExpenseDto> updateExpenseValidator,
+        IValidator<GetExpensesRequest> getExpensesRequestValidator)
     {
         _expenseService = expenseService;
         _createExpenseValidator = createExpenseValidator;
         _updateExpenseValidator = updateExpenseValidator;
+        _getExpensesRequestValidator = getExpensesRequestValidator;
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<ExpenseDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResultDto<ExpenseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAll([FromQuery] GetExpensesRequest request, CancellationToken cancellationToken)
     {
-        var expenses = await _expenseService.GetAllAsync(cancellationToken);
-        return Ok(expenses);
+        request.PageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
+        request.PageSize = request.PageSize < 1 ? 10 : request.PageSize;
+
+        var validationResult = await _getExpensesRequestValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+
+        var result = await _expenseService.GetPagedAsync(request, cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]

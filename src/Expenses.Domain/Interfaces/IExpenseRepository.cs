@@ -4,6 +4,7 @@ namespace Expenses.Domain.Interfaces;
 
 public interface IExpenseRepository
 {
+    Task<(IReadOnlyList<Expense> Items, int TotalCount)> GetPagedAsync(string category, DateOnly? occurredOnFrom, DateOnly? occurredOnTo, int skip, int take, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Expense>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<Expense> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<Expense> AddAsync(Expense expense, CancellationToken cancellationToken = default);

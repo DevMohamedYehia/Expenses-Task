@@ -1,6 +1,7 @@
 using AutoMapper;
 using Expenses.Application.DTOs;
 using Expenses.Application.Services.Interfaces;
+using Expenses.Domain.Constants;
 using Expenses.Domain.Entities;
 using Expenses.Domain.Interfaces;
 
@@ -8,6 +9,7 @@ namespace Expenses.Application.Services.Implementations;
 
 public class ExpenseService : IExpenseService
 {
+
     private readonly IExpenseRepository _repository;
     private readonly IMapper _mapper;
     private readonly ICurrentUser _currentUser;
@@ -17,6 +19,31 @@ public class ExpenseService : IExpenseService
         _repository = repository;
         _mapper = mapper;
         _currentUser = currentUser;
+    }
+
+    public async Task<PagedResultDto<ExpenseDto>> GetPagedAsync(GetExpensesRequest request, CancellationToken cancellationToken = default)
+    {
+        var pageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
+        var pageSize = request.PageSize < 1 ? 10 : request.PageSize;
+        if (pageSize > ExpenseConstants.MaxPageSize)
+            pageSize = ExpenseConstants.MaxPageSize;
+
+        var skip = (pageNumber - 1) * pageSize;
+        var (items, totalCount) = await _repository.GetPagedAsync(
+            request.Category,
+            request.OccurredOnFrom,
+            request.OccurredOnTo,
+            skip,
+            pageSize,
+            cancellationToken);
+
+        return new PagedResultDto<ExpenseDto>
+        {
+            Items = _mapper.Map<IReadOnlyList<ExpenseDto>>(items),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
     }
 
     public async Task<IReadOnlyList<ExpenseDto>> GetAllAsync(CancellationToken cancellationToken = default)
