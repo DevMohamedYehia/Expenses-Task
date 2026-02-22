@@ -17,6 +17,4 @@ How to start the application
 4. Use the Register API to create a user.
 5. Use the Login API to get a valid JWT token.
 6. Use this JWT to create/edit/update/delete Expenses:
-
-   * In Swagger, click Authorize and paste the token in this format:
-     Bearer <your_token>
+   * In Swagger, click Authorize and paste the token: <your_token>
